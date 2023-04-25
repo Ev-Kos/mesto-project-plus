@@ -9,7 +9,7 @@ export const getUsers = (req: Request, res: Response, next: NextFunction) => {
 
 export const getUserById = (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
-  User.find({ _id: id })
+  return User.findById(id)
     .then((users) => res.status(200).send(users))
     .catch((err) => next(err));
 };
