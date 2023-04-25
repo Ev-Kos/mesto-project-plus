@@ -1,7 +1,7 @@
 {
-  "name": "starterkits",
+  "name": "mesto-backend",
   "version": "1.0.0",
-  "description": "< Добавьте описание проекта в свободной форме >",
+  "description": "backend for mesto",
   "main": "dist/app.js",
   "scripts": {
     "lint": "npx eslint src/**/*.ts",
