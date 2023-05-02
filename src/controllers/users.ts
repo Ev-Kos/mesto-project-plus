@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import User from '../models/user';
 import { IRequestCustom } from '../types/user';
 import BadRequest from '../errors/BadRequest';
 import NotFoundError from '../errors/NotFoundError';
+import RepeatEmail from '../errors/RepeatEmail';
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({})
@@ -28,10 +31,22 @@ export const getUserById = (req: Request, res: Response, next: NextFunction) => 
 };
 
 export const createUser = (req: Request, res: Response, next: NextFunction) => {
-  const { name, about, avatar } = req.body;
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
 
-  return User.create({ name, about, avatar })
-    .then((user) => res.status(200).send(user))
+  return bcrypt.hash(password, 10).then((hash) => {
+    User.create({
+      name, about, avatar, email, password: hash,
+    });
+  })
+    .then(async (user) => {
+      const test = await User.findOne({ email: req.body.email }).exec();
+      if (test) {
+        return next(new RepeatEmail('Пользователь с такой почтой уже зарегистрирован'));
+      }
+      res.status(200).send({ message: 'Регистрация прошла успешно', user });
+    })
     .catch((err) => next(err));
 };
 
@@ -56,6 +71,18 @@ export const updateAvatar = (req: IRequestCustom, res: Response, next: NextFunct
         throw new NotFoundError('Пользователь по указанному id не найден');
       }
       res.status(200).send(user);
+    })
+    .catch((err) => next(err));
+};
+
+export const login = (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      res.send({
+        token: jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' }),
+      });
     })
     .catch((err) => next(err));
 };
