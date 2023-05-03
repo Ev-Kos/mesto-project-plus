@@ -18,10 +18,18 @@ export const getCards = (req: Request, res: Response, next: NextFunction) => {
 
 export const createCard = (req: IRequestCustom, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
+  const createdAt = new Date();
 
-  return Card.create({ name, link, owner: req.user?._id })
+  return Card.create({
+    name, link, owner: req.user?._id, createdAt,
+  })
     .then((card) => res.status(201).send(card))
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequest('Переданы некорректные данные'));
+      }
+      next(err);
+    });
 };
 
 export const deleteCardById = (req: IRequestCustom, res: Response, next: NextFunction) => {
@@ -33,7 +41,13 @@ export const deleteCardById = (req: IRequestCustom, res: Response, next: NextFun
       }
       res.status(200).send(card);
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.message === 'ValidationError') {
+        return next(new NotFoundError('Карточка по указанному id не найдена'));
+      } if (err.message === 'CastError') {
+        return next(new BadRequest('Карточка по указанному id не найдена'));
+      } next(err);
+    });
 };
 
 export const likeCard = (req: IRequestCustom, res: Response, next: NextFunction) => {
@@ -44,11 +58,17 @@ export const likeCard = (req: IRequestCustom, res: Response, next: NextFunction)
   )
     .then((card) => {
       if (!card) {
-        throw new NotFoundError('Не валидный id карточки');
+        throw new NotFoundError('Карточка по указанному id не найдена');
       }
       res.status(200).send(card?.likes);
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.message === 'ValidationError') {
+        return next(new BadRequest('Переданы некорректные данные'));
+      } if (err.message === 'CastError') {
+        return next(new NotFoundError('Карточка по указанному id не найдена'));
+      } next(err);
+    });
 };
 
 export const dislikeCard = (req: any, res: Response, next: NextFunction) => {
@@ -59,9 +79,15 @@ export const dislikeCard = (req: any, res: Response, next: NextFunction) => {
   )
     .then((card) => {
       if (!card) {
-        throw new NotFoundError('Не валидный id карточки');
+        throw new NotFoundError('Карточка по указанному id не найдена');
       }
       res.send(card?.likes);
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.message === 'ValidationError') {
+        return next(new BadRequest('Переданы некорректные данные'));
+      } if (err.message === 'CastError') {
+        return next(new NotFoundError('Карточка по указанному id не найдена'));
+      } next(err);
+    });
 };

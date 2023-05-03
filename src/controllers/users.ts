@@ -23,11 +23,16 @@ export const getUserById = (req: Request, res: Response, next: NextFunction) => 
   return User.findById(id)
     .then((user) => {
       if (!user) {
-        throw new NotFoundError('Пользователь по указанному id не найден');
+        throw new NotFoundError('Пользователь не найден');
       }
       res.status(200).send(user);
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new NotFoundError('Пользователь не найден'));
+      }
+      next(err);
+    });
 };
 
 export const createUser = (req: Request, res: Response, next: NextFunction) => {
@@ -47,7 +52,12 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
       }
       res.status(200).send({ message: 'Регистрация прошла успешно', user });
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        return next(new BadRequest('Переданы некорректные данные'));
+      }
+      next(err);
+    });
 };
 
 export const updateUser = (req: IRequestCustom, res: Response, next: NextFunction) => {
@@ -60,7 +70,15 @@ export const updateUser = (req: IRequestCustom, res: Response, next: NextFunctio
       }
       res.status(200).send(user);
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        return next(new BadRequest('Переданы некорректные данные'));
+      }
+      if (err.name === 'CastError') {
+        return next(new NotFoundError('Пользователь по указанному id не найден'));
+      }
+      next(err);
+    });
 };
 
 export const updateAvatar = (req: IRequestCustom, res: Response, next: NextFunction) => {
@@ -72,7 +90,15 @@ export const updateAvatar = (req: IRequestCustom, res: Response, next: NextFunct
       }
       res.status(200).send(user);
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        return next(new BadRequest('Переданы некорректные данные'));
+      }
+      if (err.name === 'CastError') {
+        return next(new NotFoundError('Пользователь по указанному id не найден'));
+      }
+      next(err);
+    });
 };
 
 export const login = (req: Request, res: Response, next: NextFunction) => {
@@ -90,11 +116,16 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
 export const getCurrentUser = (req: IRequestCustom, res: Response, next: NextFunction) => {
   const { id } = req.params;
   return User.findById(id)
+    .orFail(new Error('Пользователь не найден'))
     .then((user) => {
       if (!user) {
         throw new NotFoundError('Пользователь по указанному id не найден');
       }
       res.status(200).send(user);
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.message === 'Пользователь не найден') {
+        return next(new NotFoundError('Пользователь не найден'));
+      } next(err);
+    });
 };
