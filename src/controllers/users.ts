@@ -41,8 +41,8 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
     });
   })
     .then(async (user) => {
-      const test = await User.findOne({ email: req.body.email }).exec();
-      if (test) {
+      const detected = await User.findOne({ email: req.body.email }).exec();
+      if (detected) {
         return next(new RepeatEmail('Пользователь с такой почтой уже зарегистрирован'));
       }
       res.status(200).send({ message: 'Регистрация прошла успешно', user });
@@ -83,6 +83,18 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
       res.send({
         token: jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' }),
       });
+    })
+    .catch((err) => next(err));
+};
+
+export const getCurrentUser = (req: IRequestCustom, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  return User.findById(id)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь по указанному id не найден');
+      }
+      res.status(200).send(user);
     })
     .catch((err) => next(err));
 };
