@@ -9,12 +9,7 @@ import RepeatEmail from '../errors/RepeatEmail';
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({})
-    .then((users) => {
-      if (!users) {
-        throw new BadRequest('Пользователи не найдены');
-      }
-      res.status(200).send(users);
-    })
+    .then((users) => res.status(200).send(users))
     .catch((err) => next(err));
 };
 
@@ -30,8 +25,11 @@ export const getUserById = (req: Request, res: Response, next: NextFunction) => 
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new NotFoundError('Пользователь не найден'));
+      } else if (err.name === 'ValidationError') {
+        next(new BadRequest('Переданы некорректные данные'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
@@ -39,24 +37,28 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
-
-  return bcrypt.hash(password, 10).then((hash) => {
-    User.create({
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
       name, about, avatar, email, password: hash,
-    });
-  })
-    .then(async (user) => {
-      const detected = await User.findOne({ email: req.body.email }).exec();
-      if (detected) {
-        return next(new RepeatEmail('Пользователь с такой почтой уже зарегистрирован'));
-      }
-      res.status(200).send({ message: 'Регистрация прошла успешно', user });
+    }))
+    .then((user) => {
+      res.status(200).send({
+        message: 'Регистрация прошла успешно',
+        email: user.email,
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
+        _id: user._id,
+      });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return next(new BadRequest('Переданы некорректные данные'));
+        next(new BadRequest('Переданы некорректные данные'));
+      } else if (err.code === 11000) {
+        next(new RepeatEmail('Пользователь с такой почтой уже зарегистрирован'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
@@ -116,7 +118,6 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
 export const getCurrentUser = (req: IRequestCustom, res: Response, next: NextFunction) => {
   const { id } = req.params;
   return User.findById(id)
-    .orFail(new Error('Пользователь не найден'))
     .then((user) => {
       if (!user) {
         throw new NotFoundError('Пользователь по указанному id не найден');
@@ -124,8 +125,8 @@ export const getCurrentUser = (req: IRequestCustom, res: Response, next: NextFun
       res.status(200).send(user);
     })
     .catch((err) => {
-      if (err.message === 'Пользователь не найден') {
-        return next(new NotFoundError('Пользователь не найден'));
+      if (err.message === 'CastError') {
+        return next(new NotFoundError('Пользователь по указанному id не найден'));
       } next(err);
     });
 };

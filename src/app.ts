@@ -8,6 +8,7 @@ import userRouter from './routes/users';
 import { login, createUser } from './controllers/users';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { loginValidation, createUserValidation } from './middleware/validation';
+import NotFoundError from './errors/NotFoundError';
 
 const { PORT = 3000 } = process.env;
 const app = express();
@@ -25,6 +26,10 @@ app.use(auth);
 
 app.use('/users', userRouter);
 app.use('/cards', cardRouter);
+
+app.use('*', (req, res, next) => {
+  next(new NotFoundError('Запрашиваемый ресурс не найден'));
+});
 
 app.use(errorLogger);
 app.use(errors);
