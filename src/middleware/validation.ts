@@ -1,4 +1,5 @@
 import { celebrate, Joi } from 'celebrate';
+import { link } from '../constants/constants';
 
 export const loginValidation = celebrate({
   body: Joi.object().keys({
@@ -11,14 +12,14 @@ export const createUserValidation = celebrate({
   body: Joi.object().keys({
     name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(200),
-    avatar: Joi.string(),
+    avatar: Joi.string().pattern(link),
     password: Joi.string().required().min(6),
     email: Joi.string().required().email(),
   }),
 });
 
 export const linkValidation = (url: string) => {
-  /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\\/+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\/+.~#?&//=]*)/.test(url);
+  link.test(url);
 };
 
 export const createCardValidation = celebrate({
@@ -30,7 +31,7 @@ export const createCardValidation = celebrate({
 
 export const cardValidation = celebrate({
   params: Joi.object().keys({
-    id: Joi.string().required().hex(),
+    id: Joi.string().required().hex().length(24),
   }),
 });
 
@@ -42,13 +43,13 @@ export const getUserValidation = celebrate({
 
 export const updateUserValidation = celebrate({
   body: Joi.object().keys({
-    about: Joi.string().min(2).max(200),
-    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(200).required(),
+    name: Joi.string().min(2).max(30).required(),
   }),
 });
 
 export const updateAvatarValidation = celebrate({
   body: Joi.object().keys({
-    avatar: Joi.string(),
+    avatar: Joi.string().pattern(link).required(),
   }),
 });

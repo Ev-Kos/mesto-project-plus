@@ -1,9 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import Card from '../models/card';
 import { IRequestCustom } from '../types/user';
 import BadRequest from '../errors/BadRequest';
 import NotFoundError from '../errors/NotFoundError';
 import ForbiddenAction from '../errors/ForbiddenAction';
+import {
+  incorrectDataMessage,
+  forbiddenActionMessage,
+  cardNotFoundMessage,
+  deleteCardMessage,
+} from '../constants/constants';
 
 export const getCards = (req: Request, res: Response, next: NextFunction) => {
   Card.find({})
@@ -17,12 +24,12 @@ export const createCard = (req: IRequestCustom, res: Response, next: NextFunctio
   const createdAt = new Date();
 
   return Card.create({
-    name, link, owner: req.user?._id, createdAt,
+    name, link, owner: req.user, createdAt,
   })
     .then((card) => res.status(201).send(card))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new BadRequest('Переданы некорректные данные'));
+      if (err instanceof mongoose.Error.ValidationError) {
+        next(new BadRequest(incorrectDataMessage));
       } else {
         next(err);
       }
@@ -34,14 +41,14 @@ export const deleteCardById = (req: IRequestCustom, res: Response, next: NextFun
   return Card.findById(id)
     .then((card) => {
       if (req.user?._id !== card?.owner.toString()) {
-        throw new ForbiddenAction('Нельзя удалить чужую карточку');
+        throw new ForbiddenAction(forbiddenActionMessage);
       }
       card?.delete();
-      return res.status(200).send({ message: 'Карточка удалена', card });
+      return res.status(200).send({ message: deleteCardMessage, card });
     })
     .catch((err) => {
-      if (err.message === 'CastError') {
-        return next(new BadRequest('Карточка по указанному id не найдена'));
+      if (err instanceof mongoose.Error.CastError) {
+        return next(new BadRequest(cardNotFoundMessage));
       } next(err);
     });
 };
@@ -55,15 +62,15 @@ export const likeCard = (req: IRequestCustom, res: Response, next: NextFunction)
     .populate(['owner', 'likes'])
     .then((card) => {
       if (!card) {
-        throw new NotFoundError('Карточка по указанному id не найдена');
+        throw new NotFoundError(cardNotFoundMessage);
       }
       res.status(200).send(card?.likes);
     })
     .catch((err) => {
-      if (err.message === 'ValidationError') {
-        return next(new BadRequest('Переданы некорректные данные'));
-      } if (err.message === 'CastError') {
-        return next(new NotFoundError('Карточка по указанному id не найдена'));
+      if (err instanceof mongoose.Error.ValidationError) {
+        return next(new BadRequest(incorrectDataMessage));
+      } if (err instanceof mongoose.Error.CastError) {
+        return next(new NotFoundError(cardNotFoundMessage));
       } next(err);
     });
 };
@@ -77,15 +84,15 @@ export const dislikeCard = (req: any, res: Response, next: NextFunction) => {
     .populate(['owner', 'likes'])
     .then((card) => {
       if (!card) {
-        throw new NotFoundError('Карточка по указанному id не найдена');
+        throw new NotFoundError(cardNotFoundMessage);
       }
       res.send(card?.likes);
     })
     .catch((err) => {
-      if (err.message === 'ValidationError') {
-        return next(new BadRequest('Переданы некорректные данные'));
-      } if (err.message === 'CastError') {
-        return next(new NotFoundError('Карточка по указанному id не найдена'));
+      if (err instanceof mongoose.Error.ValidationError) {
+        return next(new BadRequest(incorrectDataMessage));
+      } if (err instanceof mongoose.Error.CastError) {
+        return next(new NotFoundError(cardNotFoundMessage));
       } next(err);
     });
 };
