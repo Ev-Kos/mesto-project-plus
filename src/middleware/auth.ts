@@ -9,7 +9,7 @@ export default (req: ISessionCustom, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;
 
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return new UnAuthorized(unAuthorizedMessage);
+    return next(new UnAuthorized(unAuthorizedMessage));
   }
 
   const token = authorization.replace('Bearer ', '');
@@ -17,7 +17,7 @@ export default (req: ISessionCustom, res: Response, next: NextFunction) => {
   try {
     payload = jwt.verify(token, SECRET_KEY);
   } catch (err) {
-    return new UnAuthorized(unAuthorizedMessage);
+    return next(new UnAuthorized(unAuthorizedMessage));
   }
 
   req.user = payload;
