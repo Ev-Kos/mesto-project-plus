@@ -32,8 +32,6 @@ export const getUserById = (req: Request, res: Response, next: NextFunction) => 
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        next(new NotFoundError(userNotFoundMessage));
-      } else if (err instanceof mongoose.Error.ValidationError) {
         next(new BadRequest(incorrectDataMessage));
       } else {
         next(err);
@@ -60,7 +58,7 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
       });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err instanceof mongoose.Error.ValidationError) {
         next(new BadRequest(incorrectDataMessage));
       } else if (err.code === 11000) {
         next(new RepeatEmail(repeatEmailMessage));
@@ -83,8 +81,6 @@ export const updateUser = (req: IRequestCustom, res: Response, next: NextFunctio
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         next(new BadRequest(incorrectDataMessage));
-      } else if (err instanceof mongoose.Error.CastError) {
-        next(new NotFoundError(userNotFoundMessage));
       } else {
         next(err);
       }
@@ -103,8 +99,6 @@ export const updateAvatar = (req: IRequestCustom, res: Response, next: NextFunct
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         next(new BadRequest(incorrectDataMessage));
-      } else if (err instanceof mongoose.Error.CastError) {
-        next(new NotFoundError(userNotFoundMessage));
       } else {
         next(err);
       }
@@ -132,9 +126,5 @@ export const getCurrentUser = (req: IRequestCustom, res: Response, next: NextFun
       }
       res.status(200).send(user);
     })
-    .catch((err) => {
-      if (err instanceof mongoose.Error.CastError) {
-        return next(new NotFoundError(userNotFoundMessage));
-      } next(err);
-    });
+    .catch((err) => next(err));
 };

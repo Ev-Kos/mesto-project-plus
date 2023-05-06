@@ -24,8 +24,8 @@ export const linkValidation = (url: string) => {
 
 export const createCardValidation = celebrate({
   body: Joi.object().keys({
-    name: Joi.string().min(2).max(30),
-    link: Joi.string(),
+    name: Joi.string().min(2).max(30).required(),
+    link: Joi.string().pattern(link).required(),
   }),
 });
 
@@ -37,7 +37,7 @@ export const cardValidation = celebrate({
 
 export const getUserValidation = celebrate({
   params: Joi.object().keys({
-    userId: Joi.string().required(),
+    userId: Joi.string().required().hex().length(24),
   }),
 });
 

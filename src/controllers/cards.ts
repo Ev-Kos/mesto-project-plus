@@ -40,11 +40,15 @@ export const deleteCardById = (req: IRequestCustom, res: Response, next: NextFun
   const { id } = req.params;
   return Card.findById(id)
     .then((card) => {
-      if (req.user?._id !== card?.owner.toString()) {
+      if (!card) {
+        throw new NotFoundError(cardNotFoundMessage);
+      } else if (req.user?._id !== card?.owner.toString()) {
         throw new ForbiddenAction(forbiddenActionMessage);
+      } else {
+        Card.deleteOne(card._id)
+          .then(() => res.status(200).send({ message: deleteCardMessage, card }))
+          .catch(next);
       }
-      card?.delete();
-      return res.status(200).send({ message: deleteCardMessage, card });
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
@@ -67,11 +71,11 @@ export const likeCard = (req: IRequestCustom, res: Response, next: NextFunction)
       res.status(200).send(card?.likes);
     })
     .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError) {
-        return next(new BadRequest(incorrectDataMessage));
-      } if (err instanceof mongoose.Error.CastError) {
-        return next(new NotFoundError(cardNotFoundMessage));
-      } next(err);
+      if (err instanceof mongoose.Error.CastError) {
+        next(new BadRequest(incorrectDataMessage));
+      } else {
+        next(err);
+      }
     });
 };
 
@@ -89,10 +93,10 @@ export const dislikeCard = (req: any, res: Response, next: NextFunction) => {
       res.send(card?.likes);
     })
     .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError) {
-        return next(new BadRequest(incorrectDataMessage));
-      } if (err instanceof mongoose.Error.CastError) {
-        return next(new NotFoundError(cardNotFoundMessage));
-      } next(err);
+      if (err instanceof mongoose.Error.CastError) {
+        next(new BadRequest(incorrectDataMessage));
+      } else {
+        next(err);
+      }
     });
 };
