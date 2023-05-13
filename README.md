@@ -1,6 +1,6 @@
 # Бэкенд Mesto
 ## Описание проекта
-Реализация бэкэнда для проекта [Mesto.](https://ev-kos.github.io/mesto-project/)
+Реализация бэкенда для проекта [Mesto.](https://ev-kos.github.io/mesto-project/)
 
 ## Используемые технологии
 <img src="https://github.com/devicons/devicon/blob/master/icons/typescript/typescript-original.svg" width="70" height="70"/>&nbsp;
